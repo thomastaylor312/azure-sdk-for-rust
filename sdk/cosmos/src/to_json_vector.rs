@@ -20,6 +20,7 @@ impl ToJsonVector {
     // serialization of the items. Ideally we should collect the &dyn Serialize
     // trait objects and serialize in one shot at the end but unfortunately
     // Serialize cannot be made a trait object so no dynamic dispatch :(
+    // TODO: Can we do this with erased-serde crate?
     pub fn push<T>(&mut self, t: T) -> Result<&mut Self, AzureError>
     where
         T: Serialize,

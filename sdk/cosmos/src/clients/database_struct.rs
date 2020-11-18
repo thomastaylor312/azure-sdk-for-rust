@@ -1,8 +1,70 @@
-use crate::clients::{CollectionStruct, UserStruct};
+use crate::clients::{CollectionStruct, CosmosClient2, UserStruct};
+use crate::params::database::*;
+use crate::responses::*;
 use crate::traits::*;
 use crate::{requests, CosmosClient};
+use crate::{ConsistencyLevelOption, ResourceType};
+use azure_core::errors::{check_status_extract_headers_and_body, AzureError};
+use azure_core::prelude::*;
 use azure_core::No;
 use std::borrow::Cow;
+
+/// A builder for database-centric Cosmos requests, created by
+/// [`CosmosClient::database`](CosmosClient::database)
+pub struct DatabaseClient2 {
+    client: CosmosClient2,
+    db_name: String,
+}
+
+impl DatabaseClient2 {
+    pub async fn list_collections(&self) {
+        // requests::ListCollectionsBuilder::new(self)
+    }
+
+    pub async fn get_database(&self) {
+        // requests::GetDatabaseBuilder::new(self)
+    }
+
+    pub async fn delete_database(&self) {
+        // requests::DeleteDatabaseBuilder::new(self)
+    }
+
+    pub async fn create_database(
+        &self,
+        params: CreateDatabaseParams,
+    ) -> Result<CreateDatabaseResponse, AzureError> {
+        #[derive(Serialize, Debug)]
+        struct CreateDatabaseRequest<'a> {
+            pub id: &'a str,
+        }
+
+        let req = serde_json::to_string(&CreateDatabaseRequest { id: &self.db_name })?;
+
+        let request =
+            self.client
+                .prepare_request("dbs", hyper::Method::POST, ResourceType::Databases);
+
+        let request = UserAgentOption::add_header(&params, request);
+        let request = ActivityIdOption::add_header(&params, request);
+        let request = ConsistencyLevelOption::add_header(params.consistency_level, request);
+
+        // TODO: This should probably be put in a function at the CosmosClient level
+
+        let request = request.body(hyper::Body::from(req))?; // todo: set content-length here and elsewhere without builders
+
+        debug!("create database request prepared == {:?}", request);
+
+        let future_response = self.client.client.request(request);
+        let (headers, body) =
+            check_status_extract_headers_and_body(future_response, StatusCode::CREATED).await?;
+
+        Ok((&headers, &body as &[u8]).try_into()?)
+    }
+
+    pub async fn list_users(&self) {
+        // requests::ListUsersBuilder::new(self)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct DatabaseStruct<'a, C>

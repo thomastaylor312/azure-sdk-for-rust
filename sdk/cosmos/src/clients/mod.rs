@@ -11,6 +11,7 @@ mod user_struct;
 pub use attachment_struct::AttachmentStruct;
 pub use collection_struct::CollectionStruct;
 pub use cosmos_struct::*;
+pub use database_struct::DatabaseClient2;
 pub use database_struct::DatabaseStruct;
 pub use document_struct::DocumentStruct;
 pub use permission_struct::PermissionStruct;

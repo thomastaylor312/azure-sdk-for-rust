@@ -22,6 +22,7 @@ pub(crate) mod from_headers;
 mod headers;
 mod indexing_directive;
 pub mod offer;
+pub(crate) mod params;
 mod partition_key_range;
 mod partition_keys;
 mod permission;
@@ -195,16 +196,17 @@ pub trait AllowTentativeWritesOption {
     }
 }
 
-pub trait ConsistencyLevelSupport<'a> {
+pub trait ConsistencyLevelSupport {
     type O;
-    fn with_consistency_level(self, consistency_level: ConsistencyLevel<'a>) -> Self::O;
+    fn with_consistency_level(self, consistency_level: ConsistencyLevel) -> Self::O;
 }
 
-pub trait ConsistencyLevelOption<'a> {
-    fn consistency_level(&self) -> Option<ConsistencyLevel<'a>>;
+pub struct ConsistencyLevelOption {}
 
-    #[must_use]
-    fn add_header(&self, builder: Builder) -> Builder {
+impl ConsistencyLevelOption {
+    // TODO: might be good to have a trait called `HeaderOption` that any of these types we use can
+    // implement to allow setting its appropriate header value
+    pub fn add_header(consistency_level: Option<ConsistencyLevel>, builder: Builder) -> Builder {
         if let Some(consistency_level) = self.consistency_level() {
             let builder = builder.header(
                 HEADER_CONSISTENCY_LEVEL,
@@ -214,7 +216,7 @@ pub trait ConsistencyLevelOption<'a> {
             // if we have a Session consistency level we make sure to pass
             // the x-ms-session-token header too.
             if let ConsistencyLevel::Session(session_token) = consistency_level {
-                builder.header(HEADER_SESSION_TOKEN, session_token.as_ref())
+                builder.header(HEADER_SESSION_TOKEN, session_token)
             } else {
                 builder
             }
